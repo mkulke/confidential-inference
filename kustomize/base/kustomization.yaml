@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- deployment.yaml
+- service.yaml
+
+images:
+- name: nginx
+  digest: sha256:124b44bfc9ccd1f3cedf4b592d4d1e8bddb78b51ec2ed5056c52d3692baebc19
+
+configMapGenerator:
+- name: app-config
+  files:
+  - app.conf
+- name: tls-config
+  files:
+  - tls.conf
+  - tls.crt
+- name: init-data
+  files:
+  - init-data.b64
+  - init-data.toml
+
+secretGenerator:
+- name: sealed-tls-key
+  files:
+  - tls.key=tls.key.sealed
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+replacements:
+- source:
+    kind: ConfigMap
+    name: init-data
+    fieldPath: data.[init-data.b64]
+  targets:
+  - select:
+      kind: Deployment
+      name: ci-app
+    fieldPaths:
+    - spec.template.metadata.annotations.[io.katacontainers.config.runtime.cc_init_data]

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ci-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ci-app
+  template:
+    metadata:
+      labels:
+        app: ci-app
+      annotations:
+        "io.katacontainers.config.runtime.cc_init_data": ""
+    spec:
+      containers:
+      - name: app-nginx
+        image: nginx:latest
+        volumeMounts:
+        - name: app-config
+          mountPath: /etc/nginx/conf.d
+      - name: tls-nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 8443
+        volumeMounts:
+        - name: tls-config
+          mountPath: /etc/nginx/conf.d
+        - name: sealed-tls-key
+          mountPath: /sealed
+          readOnly: true
+      volumes:
+      - name: app-config
+        configMap:
+          name: app-config
+      - name: tls-config
+        configMap:
+          name: tls-config
+      - name: sealed-tls-key
+        secret:
+          secretName: sealed-tls-key
